@@ -154,6 +154,21 @@ namespace SecretSharing
         }
     }
 
+    class Share
+    {
+        private Tuple<byte,byte> t;
+
+        public Share()
+        {
+            t = new Tuple<byte,byte>(0, 0);
+        }
+
+        public Share(byte b1, byte b2)
+        {
+            t = new Tuple<byte, byte>(b1, b2);
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
