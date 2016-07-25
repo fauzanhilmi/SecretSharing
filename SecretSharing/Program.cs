@@ -8,11 +8,11 @@ namespace SecretSharing
 {
     class Field
     {
-        public const int order = 256;
+        public const int Order = 256;
         //irreducible polynomial used : x^8 + x^4 + x^3 + x^2 + 1 (0x11D)
-        public const int polynomial = 0x11D;
+        public const int Polynomial = 0x11D;
         //generator to be used in Exp & Log table generation
-        public const byte generator = 0x2;
+        public const byte Generator = 0x2;
         public static byte[] Exp;
         public static byte[] Log;
 
@@ -31,18 +31,18 @@ namespace SecretSharing
         //generates Exp & Log table for fast multiplication operator
         static Field()
         {
-            Exp = new byte[order];
-            Log = new byte[order];
+            Exp = new byte[Order];
+            Log = new byte[Order];
 
             byte val = 0x01;
-            for (int i = 0; i < order; i++)
+            for (int i = 0; i < Order; i++)
             {
                 Exp[i] = val;
-                if (i < order - 1)
+                if (i < Order - 1)
                 {
                     Log[val] = (byte)i;
                 }
-                val = multiply(generator, val);
+                val = multiply(Generator, val);
             }
         }
 
@@ -92,7 +92,7 @@ namespace SecretSharing
             Field Fres = new Field(0);
             if (Fa.value != 0)
             {
-                byte bres = (byte)(((order - 1) + Log[Fa.value] - Log[Fb.value]) % (order - 1));
+                byte bres = (byte)(((Order - 1) + Log[Fa.value] - Log[Fb.value]) % (Order - 1));
                 bres = Exp[bres];
                 Fres.value = bres;
             }
@@ -146,7 +146,7 @@ namespace SecretSharing
                 aa <<= 1;
                 if (highest_bit != 0)
                 {
-                    aa ^= (polynomial & 0xFF);
+                    aa ^= (Polynomial & 0xFF);
                 }
                 bb >>= 1;
             }
@@ -156,18 +156,57 @@ namespace SecretSharing
 
     class Share
     {
-        private Tuple<byte,byte> t;
+        private Tuple<Field,Field> t;
 
         public Share()
         {
-            t = new Tuple<byte,byte>(0, 0);
+            Field f1 = new Field(0);
+            Field f2 = new Field(0);
+            t = new Tuple<Field,Field>(f1,f2);
         }
 
-        public Share(byte b1, byte b2)
+        public Share(Field f1, Field f2)
         {
-            t = new Tuple<byte, byte>(b1, b2);
+            t = new Tuple<Field, Field>(f1, f2);
+        }
+
+        //getters and setter
+        public Field getPoint()
+        {
+            return t.Item1;
+        }
+
+        public Field getValue()
+        {
+            return t.Item2;
+        }
+
+        public void set(Field _point, Field _value)
+        {
+            t = new Tuple<Field, Field>(_point, _value);
         }
     }
+
+    static class Operation
+    {
+        public static Share[] Generate(Field k, Field n, Field S)
+        {
+            Share[] shares = new Share[n.getValue()];
+            //generate polynomial
+
+            //...
+            return shares;
+        }
+
+        public static Field Reconstruct(Share[] shares, Field k)
+        {
+            Field S = new Field(0);
+            //....
+            return S;
+        }
+        
+        //private void generatePolynomial
+    }   
 
     class Program
     {
