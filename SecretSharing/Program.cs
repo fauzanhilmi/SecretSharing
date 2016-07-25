@@ -99,6 +99,16 @@ namespace SecretSharing
             return Fres;
         }
 
+        public static Field pow(Field f, byte exp)
+        {
+            Field fres = new Field(1);
+            for (byte i=0; i<exp; i++)
+            {
+                fres *= f;
+            }
+            return fres;
+        }
+
         public static bool operator ==(Field Fa, Field Fb)
         {
             return (Fa.value == Fb.value);
@@ -189,11 +199,23 @@ namespace SecretSharing
     static class Operation
     {
         public static Share[] GenerateShares(byte k, byte n, byte S)
+        //check exception?
         {
             Share[] shares = new Share[n];
-            //generate polynomial
+            Field[] randPol = GeneratePolynomial(k, S);
 
-            //...
+            for(byte i=0; i<n; i++)
+            {
+                byte point = (byte) (i + 1);
+
+                Field value = new Field(0);
+                for(byte j=0; j<k; j++)
+                {
+                    value += Field.pow(randPol[j], i);
+                }
+                shares[i].Set(point, value);
+            }
+
             return shares;
         }
 
@@ -205,7 +227,7 @@ namespace SecretSharing
         }
 
         //generates coefficients of a random polynomial with degree = k-1 and a0 = S
-        private static Field[] GeneratePolynomial(byte k, Field S)
+        private static Field[] GeneratePolynomial(byte k, byte S)
         {
             if (k==0)
             {
