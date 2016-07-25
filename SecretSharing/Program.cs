@@ -47,12 +47,12 @@ namespace SecretSharing
         }
 
         //getters and setters
-        public byte getValue()
+        public byte GetValue()
         {
             return value;
         }
 
-        public void setValue(byte _value)
+        public void SetValue(byte _value)
         {
             value = _value;
         }
@@ -75,7 +75,7 @@ namespace SecretSharing
             Field FRes = new Field(0);
             if (Fa.value != 0 && Fb.value != 0)
             {
-                byte bres = (byte)((Log[Fa.value] + Log[Fb.value]) % (order - 1));
+                byte bres = (byte)((Log[Fa.value] + Log[Fb.value]) % (Order - 1));
                 bres = Exp[bres];
                 FRes.value = bres;
             }
@@ -156,62 +156,86 @@ namespace SecretSharing
 
     class Share
     {
-        private Tuple<Field,Field> t;
+        private Tuple<byte,Field> t;
 
         public Share()
         {
-            Field f1 = new Field(0);
-            Field f2 = new Field(0);
-            t = new Tuple<Field,Field>(f1,f2);
+            Field f = new Field(0);
+            t = new Tuple<byte,Field>(0, f);
         }
 
-        public Share(Field f1, Field f2)
+        public Share(byte b, Field f)
         {
-            t = new Tuple<Field, Field>(f1, f2);
+            t = new Tuple<byte, Field>(b, f);
         }
 
         //getters and setter
-        public Field getPoint()
+        public byte GetPoint()
         {
             return t.Item1;
         }
 
-        public Field getValue()
+        public Field GetValue()
         {
             return t.Item2;
         }
 
-        public void set(Field _point, Field _value)
+        public void Set(byte p, Field v)
         {
-            t = new Tuple<Field, Field>(_point, _value);
+            t = new Tuple<byte, Field>(p, v);
         }
     }
 
     static class Operation
     {
-        public static Share[] Generate(Field k, Field n, Field S)
+        public static Share[] GenerateShares(byte k, byte n, byte S)
         {
-            Share[] shares = new Share[n.getValue()];
+            Share[] shares = new Share[n];
             //generate polynomial
 
             //...
             return shares;
         }
 
-        public static Field Reconstruct(Share[] shares, Field k)
+        public static Field ReconstructSecret(Share[] shares, byte k)
         {
             Field S = new Field(0);
             //....
             return S;
         }
-        
-        //private void generatePolynomial
+
+        //generates coefficients of a random polynomial with degree = k-1 and a0 = S
+        private static Field[] GeneratePolynomial(byte k, Field S)
+        {
+            if (k==0)
+            {
+                throw new System.ArgumentException("Length cannot be 0", "k");
+            }
+            Field[] fields = new Field[k];
+            fields[0] = new Field(S);
+
+            Random rnd = new Random();
+            for (byte i=1; i<k; i++)
+            {
+                byte current = (byte)rnd.Next(1, Field.Order);
+                Field f = new Field(current);
+                fields[i] = f;
+            }
+            return fields;
+        }
     }   
 
     class Program
     {
         static void Main(string[] args)
         {
+            //TEST for generatePolynomial
+            /*Field[] fields = Operation.generatePolynomial(255,255);
+            for(int i=0; i<fields.Length; i++)
+            {
+                Console.Write(fields[i].getValue()+" ");
+            }
+            Console.ReadLine();*/
         }
     }
 }
