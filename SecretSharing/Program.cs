@@ -47,7 +47,7 @@ namespace SecretSharing
         }
 
         //getters and setters
-        public byte GetValue()
+        public byte ToByte()
         {
             return value;
         }
@@ -58,6 +58,17 @@ namespace SecretSharing
         }
 
         //operators
+        public static explicit operator Field(byte b)
+        {
+            Field f = new Field(b);
+            return f;
+        }
+
+        public static explicit operator byte (Field f)
+        {
+            return f.value;
+        }
+
         public static Field operator +(Field Fa, Field Fb)
         {
             byte bres = (byte)(Fa.value ^ Fb.value);
@@ -139,6 +150,11 @@ namespace SecretSharing
             return value;
         }
 
+        public override string ToString()
+        {
+            return value.ToString();
+        }
+
         //multiplication method which is only used in Exp & Log table generation
         //implemented with Russian Peasant Multiplication algorithm
         private static byte multiply(byte a, byte b)
@@ -166,33 +182,34 @@ namespace SecretSharing
 
     class Share
     {
-        private Tuple<byte,Field> t;
+        private Tuple<Field,Field> t;
 
         public Share()
         {
-            Field f = new Field(0);
-            t = new Tuple<byte,Field>(0, f);
+            Field x = new Field(0);
+            Field y = new Field(0);
+            t = new Tuple<Field,Field>(x, y);
         }
 
-        public Share(byte b, Field f)
+        public Share(Field x, Field y)
         {
-            t = new Tuple<byte, Field>(b, f);
+            t = new Tuple<Field, Field>(x, y);
         }
 
         //getters and setter
-        public byte GetPoint()
+        public Field GetX()
         {
             return t.Item1;
         }
 
-        public Field GetValue()
+        public Field GetY()
         {
             return t.Item2;
         }
 
-        public void Set(byte p, Field v)
+        public void Set(Field x, Field y)
         {
-            t = new Tuple<byte, Field>(p, v);
+            t = new Tuple<Field, Field>(x, y);
         }
     }
 
@@ -204,16 +221,18 @@ namespace SecretSharing
             Share[] shares = new Share[n];
             Field[] randPol = GeneratePolynomial(k, S);
 
+            //iterate the shares
             for(byte i=0; i<n; i++)
             {
-                byte point = (byte) (i + 1);
+                Field x = new Field((byte) (i + 1));
+                Field y = new Field(0);
 
-                Field value = new Field(0);
+                //iterate the coefficients
                 for(byte j=0; j<k; j++)
                 {
-                    value += Field.pow(randPol[j], i);
+                    y += Field.pow(randPol[j], i);
                 }
-                shares[i].Set(point, value);
+                shares[i] = new Share(x, y);
             }
 
             return shares;
@@ -256,8 +275,16 @@ namespace SecretSharing
             for(int i=0; i<fields.Length; i++)
             {
                 Console.Write(fields[i].getValue()+" ");
+            }*/
+
+            //Field f = new Field(5);
+            //Console.WriteLine(Field.pow(f,0).GetValue());
+            Share[] shares = Operation.GenerateShares(2, 3, 5);
+            for(int i=0; i<shares.Length; i++)
+            {
+                Console.WriteLine(shares[i].GetX() + " " +shares[i].GetY());
             }
-            Console.ReadLine();*/
+            Console.ReadLine();
         }
     }
 }
