@@ -215,11 +215,12 @@ namespace SecretSharing
 
     static class Operation
     {
+        //generates n shares with reconstruction threshold = k and secret = S
         public static Share[] GenerateShares(byte k, byte n, byte S)
         {
             if(k==0 || n==0)
             {
-                throw new System.ArgumentOutOfRangeException("k and n cannot be 0", "k and n");
+                throw new System.ArgumentException("k and n cannot be 0", "k and n");
             }
             if(k>n)
             {
@@ -236,11 +237,9 @@ namespace SecretSharing
                 Field y = new Field(0);
 
                 //iterate the coefficients
-                //Console.WriteLine("Share #" + i);
                 for(byte j=0; j<k; j++)
                 {
                     y += (randPol[j] * Field.pow((Field)(i+1), j));
-                    //Console.WriteLine(" y at Coeff #"+j+" = "+ y + " (+= " + randPol[j] + "*"+ Field.pow((Field)(i+1), j)+")");
                 }
                 shares[i] = new Share(x, y);
             }
@@ -248,10 +247,32 @@ namespace SecretSharing
             return shares;
         }
 
+        //reconstruct secret from first "k" shares from array "shares"
+        //using Lagrange Polynomial
         public static Field ReconstructSecret(Share[] shares, byte k)
         {
+            if(shares.Length==0 || k==0)
+            {
+                throw new System.ArgumentException("Shares cannot be empty and k cannot be 0", "shares and k");
+            }
+            if(shares.Length<k)
+            {
+                throw new System.ArgumentException("Shares size cannot be less than k","shares and k");
+            }
+
             Field S = new Field(0);
-            //....
+            for(byte i=0; i<k; i++)
+            {
+                Field CurShare = shares[i].GetY();
+                for(byte j=0; j<k; j++)
+                {
+                    if(j!=i)
+                    {
+                        CurShare *= (shares[j].GetX() / (shares[j].GetX() - shares[i].GetX()));
+                    }
+                }
+                S += CurShare;
+            }
             return S;
         }
 
@@ -260,7 +281,7 @@ namespace SecretSharing
         {
             if (k==0)
             {
-                throw new System.ArgumentOutOfRangeException("Length cannot be 0", "k");
+                throw new System.ArgumentException("Length cannot be 0", "k");
             }
             Field[] fields = new Field[k];
             fields[0] = new Field(S);
@@ -272,13 +293,6 @@ namespace SecretSharing
                 Field f = new Field(current);
                 fields[i] = f;
             }
-            //TEST
-            for (byte i = 0; i < k; i++)
-            {
-                Console.Write(fields[i]+" ");
-            }
-            Console.WriteLine();
-            //END OF TEST
             return fields;
         }
     }   
@@ -288,12 +302,22 @@ namespace SecretSharing
         static void Main(string[] args)
         {
             //TEST for GenerateShares
-            Share[] shares = Operation.GenerateShares(7, 20, 5);
+            /*Share[] shares = Operation.GenerateShares(100, 245, 17);
             for(int i=0; i<shares.Length; i++)
             {
                 Console.WriteLine(shares[i].GetX() + " " +shares[i].GetY());
-            }
-            //Console.WriteLine(224 ^ 110 ^ 130);
+            }*/
+
+            //TEST for ReconstructSecret
+            /*Share[] shares = new Share[6];
+            shares[0] = new Share(new Field(2), new Field(61));
+            shares[1] = new Share(new Field(3), new Field(161));
+            shares[2] = new Share(new Field(4), new Field(113));
+            shares[3] = new Share(new Field(5), new Field(10));
+            shares[4] = new Share(new Field(7), new Field(103));
+            shares[5] = new Share(new Field(8), new Field(90));
+            shares[6] = new Share(new Field(9), new Field(92));
+            Console.WriteLine(Operation.ReconstructSecret(shares, 189));*/
             Console.ReadLine();
         }
     }
