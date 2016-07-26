@@ -216,8 +216,16 @@ namespace SecretSharing
     static class Operation
     {
         public static Share[] GenerateShares(byte k, byte n, byte S)
-        //check exception?
         {
+            if(k==0 || n==0)
+            {
+                throw new System.ArgumentOutOfRangeException("k and n cannot be 0", "k and n");
+            }
+            if(k>n)
+            {
+                throw new System.ArgumentException("k must be less or equal than n", "k and n");
+            }
+
             Share[] shares = new Share[n];
             Field[] randPol = GeneratePolynomial(k, S);
 
@@ -228,9 +236,11 @@ namespace SecretSharing
                 Field y = new Field(0);
 
                 //iterate the coefficients
+                //Console.WriteLine("Share #" + i);
                 for(byte j=0; j<k; j++)
                 {
-                    y += Field.pow(randPol[j], i);
+                    y += (randPol[j] * Field.pow((Field)(i+1), j));
+                    //Console.WriteLine(" y at Coeff #"+j+" = "+ y + " (+= " + randPol[j] + "*"+ Field.pow((Field)(i+1), j)+")");
                 }
                 shares[i] = new Share(x, y);
             }
@@ -250,7 +260,7 @@ namespace SecretSharing
         {
             if (k==0)
             {
-                throw new System.ArgumentException("Length cannot be 0", "k");
+                throw new System.ArgumentOutOfRangeException("Length cannot be 0", "k");
             }
             Field[] fields = new Field[k];
             fields[0] = new Field(S);
@@ -262,6 +272,13 @@ namespace SecretSharing
                 Field f = new Field(current);
                 fields[i] = f;
             }
+            //TEST
+            for (byte i = 0; i < k; i++)
+            {
+                Console.Write(fields[i]+" ");
+            }
+            Console.WriteLine();
+            //END OF TEST
             return fields;
         }
     }   
@@ -270,20 +287,13 @@ namespace SecretSharing
     {
         static void Main(string[] args)
         {
-            //TEST for generatePolynomial
-            /*Field[] fields = Operation.generatePolynomial(255,255);
-            for(int i=0; i<fields.Length; i++)
-            {
-                Console.Write(fields[i].getValue()+" ");
-            }*/
-
-            //Field f = new Field(5);
-            //Console.WriteLine(Field.pow(f,0).GetValue());
-            Share[] shares = Operation.GenerateShares(2, 3, 5);
+            //TEST for GenerateShares
+            Share[] shares = Operation.GenerateShares(7, 20, 5);
             for(int i=0; i<shares.Length; i++)
             {
                 Console.WriteLine(shares[i].GetX() + " " +shares[i].GetY());
             }
+            //Console.WriteLine(224 ^ 110 ^ 130);
             Console.ReadLine();
         }
     }
