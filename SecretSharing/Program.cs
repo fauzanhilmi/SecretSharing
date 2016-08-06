@@ -191,6 +191,11 @@ namespace SecretSharing
             t = new Tuple<Field,Field>(x, y);
         }
 
+        public Share(Share S)
+        {
+            t = new Tuple<Field, Field>(S.GetX(), S.GetY());
+        }
+
         public Share(Field x, Field y)
         {
             t = new Tuple<Field, Field>(x, y);
@@ -215,6 +220,8 @@ namespace SecretSharing
 
     static class Operation
     {
+        private static Random rnd = new Random();
+
         //generates n shares with reconstruction threshold = k and secret = S
         public static Share[] GenerateShares(byte k, byte n, byte S)
         {
@@ -280,7 +287,8 @@ namespace SecretSharing
         //public static void UpdateShare()
 
         //generates coefficients of a random polynomial with degree = k-1 and a0 = S
-        private static Field[] GeneratePolynomial(byte k, byte S)
+        //private static Field[] GeneratePolynomial(byte k, byte S)
+        public static Field[] GeneratePolynomial(byte k, byte S)
         {
             if (k==0)
             {
@@ -289,7 +297,6 @@ namespace SecretSharing
             Field[] fields = new Field[k];
             fields[0] = new Field(S);
 
-            Random rnd = new Random();
             for (byte i=1; i<k; i++)
             {
                 byte current = (byte)rnd.Next(1, Field.Order);
@@ -300,7 +307,8 @@ namespace SecretSharing
         }
 
         //generate subshares from a player. XArr is array of abscissa (x) of all players and k is the threshold number
-        private static Field[] GenerateSubshares(Field[] XArr, byte k)
+        //private static Field[] GenerateSubshares(Field[] XArr, byte k)
+        public static Field[] GenerateSubshares(Field[] XArr, byte k)
         {
             if((XArr.Length==0) || (k==0))
             {
@@ -311,12 +319,6 @@ namespace SecretSharing
                 throw new System.ArgumentException("Array of players' size cannot be less than k", "XArr and k");
             }
             Field[] RandPol = GeneratePolynomial(k, 0);
-            //TEST
-            /*for(int i=0; i<RandPol.Length; i++)
-            {
-                Console.Write(RandPol[i]+" ");
-            }
-            Console.WriteLine();*/
             Field[] subshares = new Field[XArr.Length];
             for(byte i=0; i<subshares.Length; i++)
             {
@@ -328,6 +330,24 @@ namespace SecretSharing
                 subshares[i] = curTotal;
             }   
             return subshares;
+        }
+
+        //generate new share for a player according to his/her old share (CurShare) and list of subshare (subshares) from other players
+        //private static Share GenerateNewShare(Share CurShare, Field[] subshares)
+        public static Share GenerateNewShare(Share CurShare, Field[] subshares)
+        {
+            if(subshares.Length ==0)
+            {
+                throw new System.ArgumentException("Array subshares cannot be empty", "subshares");
+            }
+            Field NewX = CurShare.GetX();
+            Field NewY = CurShare.GetY();
+            for(byte i=0; i<subshares.Length; i++)
+            {
+                NewY += subshares[i];
+            }
+            Share NewShare = new Share(NewX, NewY);
+            return NewShare;
         }
     }   
 
@@ -342,25 +362,59 @@ namespace SecretSharing
                 Console.WriteLine(shares[i].GetX() + " " +shares[i].GetY());
             }*/
 
-            //TEST for ReconstructSecret
-            /*Share[] shares = new Share[3];
-            shares[0] = new Share(new Field(1), new Field(61));
-            shares[1] = new Share(new Field(3), new Field(161));
-            shares[2] = new Share(new Field(4), new Field(113));
-            shares[3] = new Share(new Field(5), new Field(10));
-            shares[4] = new Share(new FiZeld(7), new Field(103));
-            shares[5] = new Share(new Field(8), new Field(90));
-            shares[6] = new Share(new Field(9), new Field(92));
-            Console.WriteLine(Operation.ReconstructSecret(shares, 3));*/
-
+            //TESTING FOR SHARE UPDATING
             //TEST for GenerateSubshares
-            /*Field[] xs = new Field[5] {new Field(1), new Field(4), new Field(5), new Field(7), new Field(237) };
-            Field[] subs = Operation.GenerateSubshare(xs, 3);
-            Console.WriteLine("hai");
-            for(int i=0; i<subs.Length; i++)
+            Field[] xs = new Field[5] { new Field(1), new Field(2), new Field(3), new Field(4), new Field(5) };
+            Share[] shares = new Share[5] { new Share((Field)1, (Field)54), new Share((Field)2, (Field)91), new Share((Field)3, (Field)124), new Share((Field)4, (Field)149), new Share((Field)5, (Field)178)}; 
+            Field[][] subs = new Field[5][];
+            for(int i=0; i<5; i++)
             {
-                Console.WriteLine(xs[i] + " : " + subs[i]);
-            }*/
+                subs[i] = Operation.GenerateSubshares(xs, 3);
+            }
+
+            for (int i = 0; i < 5; i++)
+            {
+                Console.Write((i + 1) + " : ");
+                for (byte j = 0; j < 5; j++)
+                {
+                    Console.Write(subs[i][j] + " ");
+                }
+                Console.WriteLine();
+            }
+
+            //Collecting subshares
+            Field[][] mysubs = new Field[5][];
+            for(byte i=0; i<5; i++)
+            {
+                mysubs[i] = new Field[5];
+                for (byte j=0; j<5; j++)
+                {
+                    mysubs[i][j] = subs[j][i];
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("mysubs");
+            for (int i = 0; i < 5; i++)
+            {
+                Console.Write((i + 1) + " : ");
+                for (byte j = 0; j < 5; j++)
+                {
+                    Console.Write(mysubs[i][j] + " ");
+                }
+                Console.WriteLine();
+            }
+
+            //TEST for GenerateNewShare
+            Share[] NewShares = new Share[5];
+            for(int i=0; i<5; i++)
+            {
+                NewShares[i] = Operation.GenerateNewShare(shares[i], mysubs[i]);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Old Secret : "+ Operation.ReconstructSecret(shares, 3));
+            Console.WriteLine("New Secret : "+ Operation.ReconstructSecret(NewShares, 3));
             Console.ReadLine();
         }
     }
