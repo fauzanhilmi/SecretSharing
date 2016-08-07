@@ -268,14 +268,17 @@ namespace SecretSharing
             {
                 throw new System.ArgumentException("k must be less or equal than n", "k and n");
             }
-            if(!File.Exists(SLocation))
+            /*if(!File.Exists(SLocation))
             {
                 throw new System.ArgumentNullException("Secret file is not exist", "SLocation");
-            }
+            }*/
 
-            byte[] FileArr = File.ReadAllBytes(SLocation);
+            string[] FileShareNames = new string[n];
+
+            //File IO With Read/WriteAllBytes
+            /*byte[] FileArr = File.ReadAllBytes(SLocation);
             byte[][] byteShares = new byte[n][];
-            for(byte i=0; i<n; i++)
+            for (byte i = 0; i < n; i++)
             {
                 byteShares[i] = new byte[FileArr.Length + 1];
             }
@@ -286,27 +289,82 @@ namespace SecretSharing
             for (int i = 0; i < FileArr.Length; i++)
             {
                 Share[] CurShares = GenerateShares(k, n, FileArr[i]);
-                for (byte j=0; j<n; j++)
+                for (byte j = 0; j < n; j++)
                 {
-                    if(i==0)
+                    if (i == 0)
                     {
-                        byteShares[j][0] = (byte) CurShares[j].GetX();
+                        byteShares[j][0] = (byte)CurShares[j].GetX();
                     }
-                    byteShares[j][i + 1] = (byte) CurShares[j].GetY();
+                    byteShares[j][i + 1] = (byte)CurShares[j].GetY();
                 }
             }
 
             //writing share files
-            string[] FileShareNames = new string[n];
-            for (byte i=0; i<n; i++)
+            for (byte i = 0; i < n; i++)
             {
-                string FileShareName = "output" + (i+1) + ".share";
+                string FileShareName = "output" + (i + 1) + ".share";
                 File.WriteAllBytes(FileShareName, byteShares[i]);
+            }*/
+
+            //File IO With FileStream
+            try
+            {
+                using (FileStream fs = new FileStream(SLocation, FileMode.Open, FileAccess.Read))
+                {
+                    byte[] FileArr = new byte[fs.Length];
+                    int bytesLeft = (int)fs.Length;
+                    int bytesRead = 0;
+                    while(bytesLeft > 0)
+                    {
+                        int res = fs.Read(FileArr, bytesRead, bytesLeft);
+                        if (res == 0)
+                            break;
+                        bytesRead += res;
+                        bytesLeft -= res;
+                    }
+
+                    byte[][] byteShares = new byte[n][];
+                    for (byte i = 0; i < n; i++)
+                    {
+                        byteShares[i] = new byte[FileArr.Length + 1];
+                    }
+
+                    //fill byteShares, array of array of share
+                    //byteShares[j][i] = share no. i-1 of player j
+                    //byteshares[j][0] is reserved to store the absissca (X value) of player j
+                    for (int i = 0; i < FileArr.Length; i++)
+                    {
+                        Share[] CurShares = GenerateShares(k, n, FileArr[i]);
+                        for (byte j = 0; j < n; j++)
+                        {
+                            if (i == 0)
+                            {
+                                byteShares[j][0] = (byte)CurShares[j].GetX();
+                            }
+                            byteShares[j][i + 1] = (byte)CurShares[j].GetY();
+                        }
+                    }
+
+                    //writing share files
+                    for (byte i = 0; i < n; i++)
+                    {
+                        string FileShareName = "output" + (i + 1) + ".share";
+                        using (FileStream fsWrite = new FileStream(FileShareName, FileMode.Create, FileAccess.Write))
+                        {
+                            fsWrite.Write(byteShares[i], 0, byteShares[i].Length);
+                        }
+                    }
+                    
+                }
+            } catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
             }
+
             return FileShareNames;
         }
 
-        //reconstruct secret from first "k" shares from array "shares"
+        //reconstruct secret from first "k" shares from array of share (shares)
         //using Lagrange Polynomial
         public static Field ReconstructSecret(Share[] shares, byte k)
         {
@@ -334,6 +392,21 @@ namespace SecretSharing
             }
             return S;
         }
+
+        //reconstruct secret from first "k" shares in form of files from the array of file locations (ShareFilesNames)
+        //using Lagrange Polynomial
+        /*public static Field ReconstructSecret(string[] ShareFilesNames, byte k)
+        {
+            if (ShareFilesNames.Length == 0 || k == 0)
+            {
+                throw new System.ArgumentException("Share file locations cannot be empty and k cannot be 0", "ShareFilesNames and k");
+            }
+            if (ShareFilesNames.Length < k)
+            {
+                throw new System.ArgumentException("The number of Share files cannot be less than k", "ShareFilesNames and k");
+            }
+
+        }*/
 
         //TODO
         //public static void UpdateShare()
