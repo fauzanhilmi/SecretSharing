@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -223,6 +224,7 @@ namespace SecretSharing
         private static Random rnd = new Random();
 
         //generates n shares with reconstruction threshold = k and secret = S
+        //S is an integer in the range of 0 to 255
         public static Share[] GenerateShares(byte k, byte n, byte S)
         {
             if(k==0 || n==0)
@@ -252,6 +254,56 @@ namespace SecretSharing
             }
 
             return shares;
+        }
+
+        //generates n files as shares (their locations are the return value) with reconstruction threshold = k and secret = S
+        //SLocation is the location to the file that is given as the secret. The file's size must not exceed 2^32 bytes (~4.2 GB)
+        public static string[] GenerateShares(byte k, byte n, string SLocation)
+        {
+            if (k == 0 || n == 0)
+            {
+                throw new System.ArgumentException("k and n cannot be 0", "k and n");
+            }
+            if (k > n)
+            {
+                throw new System.ArgumentException("k must be less or equal than n", "k and n");
+            }
+            if(!File.Exists(SLocation))
+            {
+                throw new System.ArgumentNullException("Secret file is not exist", "SLocation");
+            }
+
+            byte[] FileArr = File.ReadAllBytes(SLocation);
+            byte[][] byteShares = new byte[n][];
+            for(byte i=0; i<n; i++)
+            {
+                byteShares[i] = new byte[FileArr.Length + 1];
+            }
+
+            //fill byteShares, array of array of share
+            //byteShares[j][i] = share no. i-1 of player j
+            //byteshares[j][0] is reserved to store the absissca (X value) of player j
+            for (int i = 0; i < FileArr.Length; i++)
+            {
+                Share[] CurShares = GenerateShares(k, n, FileArr[i]);
+                for (byte j=0; j<n; j++)
+                {
+                    if(i==0)
+                    {
+                        byteShares[j][0] = (byte) CurShares[j].GetX();
+                    }
+                    byteShares[j][i + 1] = (byte) CurShares[j].GetY();
+                }
+            }
+
+            //writing share files
+            string[] FileShareNames = new string[n];
+            for (byte i=0; i<n; i++)
+            {
+                string FileShareName = "output" + (i+1) + ".share";
+                File.WriteAllBytes(FileShareName, byteShares[i]);
+            }
+            return FileShareNames;
         }
 
         //reconstruct secret from first "k" shares from array "shares"
@@ -356,66 +408,8 @@ namespace SecretSharing
         static void Main(string[] args)
         {
             //TEST for GenerateShares
-            /*Share[] shares = Operation.GenerateShares(3, 5, 17);
-            for(int i=0; i<shares.Length; i++)
-            {
-                Console.WriteLine(shares[i].GetX() + " " +shares[i].GetY());
-            }*/
+            string[] tests = Operation.GenerateShares(3, 5, "input.png");
 
-            //TESTING FOR SHARE UPDATING
-            //TEST for GenerateSubshares
-            Field[] xs = new Field[5] { new Field(1), new Field(2), new Field(3), new Field(4), new Field(5) };
-            Share[] shares = new Share[5] { new Share((Field)1, (Field)54), new Share((Field)2, (Field)91), new Share((Field)3, (Field)124), new Share((Field)4, (Field)149), new Share((Field)5, (Field)178)}; 
-            Field[][] subs = new Field[5][];
-            for(int i=0; i<5; i++)
-            {
-                subs[i] = Operation.GenerateSubshares(xs, 3);
-            }
-
-            for (int i = 0; i < 5; i++)
-            {
-                Console.Write((i + 1) + " : ");
-                for (byte j = 0; j < 5; j++)
-                {
-                    Console.Write(subs[i][j] + " ");
-                }
-                Console.WriteLine();
-            }
-
-            //Collecting subshares
-            Field[][] mysubs = new Field[5][];
-            for(byte i=0; i<5; i++)
-            {
-                mysubs[i] = new Field[5];
-                for (byte j=0; j<5; j++)
-                {
-                    mysubs[i][j] = subs[j][i];
-                }
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("mysubs");
-            for (int i = 0; i < 5; i++)
-            {
-                Console.Write((i + 1) + " : ");
-                for (byte j = 0; j < 5; j++)
-                {
-                    Console.Write(mysubs[i][j] + " ");
-                }
-                Console.WriteLine();
-            }
-
-            //TEST for GenerateNewShare
-            Share[] NewShares = new Share[5];
-            for(int i=0; i<5; i++)
-            {
-                NewShares[i] = Operation.GenerateNewShare(shares[i], mysubs[i]);
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Old Secret : "+ Operation.ReconstructSecret(shares, 3));
-            Console.WriteLine("New Secret : "+ Operation.ReconstructSecret(NewShares, 3));
-            Console.ReadLine();
         }
     }
 }
